@@ -30,5 +30,5 @@ This repository contains a demo firmware project using micro-ROS, designed for e
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/MansourACH/micro-ros_Demo.git
+git clone https://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@github.com/MansourACH/micro-ros_Demo.git
 cd micro-ros_Demo
