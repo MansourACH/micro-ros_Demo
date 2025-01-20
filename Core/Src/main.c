@@ -300,8 +300,8 @@ void * microros_zero_allocate(size_t number_of_elements, size_t size_of_element,
 //twist message cb
 void subscription_callback(const void *msgin) {
   const geometry_msgs__msg__Twist * msg = (const geometry_msgs__msg__Twist *)msgin;
-  // if velocity in x direction is 0 turn off LED, if 1 turn on LED
 
+  // if velocity in x direction is 0 turn off LED, if 1 turn on LED
   if (msg->linear.x > 0){
 	  HAL_GPIO_WritePin(LED6_GPIO_Port, LED6_Pin,1);
 	  HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin,0);
@@ -329,11 +329,6 @@ void subscription_callback(const void *msgin) {
 
   }
 
-
-
-//  HAL_GPIO_WritePin(LED6_GPIO_Port, LED6_Pin, (msg->linear.x == 0) ? 0 : 1);
-//  HAL_GPIO_WritePin(LED4_GPIO_Port, LED4_Pin, (msg->linear.y == 0) ? 0 : 1);
-  //HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, (msg->linear.z == 0) ? 0 : 1);
 
 }
 /* USER CODE END 4 */
@@ -370,60 +365,71 @@ void StartDefaultTask(void *argument)
     if (!rcutils_set_default_allocator(&freeRTOS_allocator)) {
         printf("Error on default allocators (line %d)\n", __LINE__);
     }
+// Include necessary libraries for ROS2 and micro-ROS
+rcl_publisher_t publisher; // Publisher object
+std_msgs__msg__Int32 msg;  // Message object for publishing an integer
+rclc_support_t support;    // Support object for managing initialization
+rcl_allocator_t allocator; // Allocator for memory management
+rcl_node_t node;           // Node object representing the micro-ROS node
+rcl_subscription_t subscriber; // Subscriber object
+geometry_msgs__msg__Twist msg_sub; // Message object for receiving velocity commands
+rclc_executor_t executor;  // Executor for managing callbacks
 
-    // micro-ROS app
+// Initialize the default allocator
+allocator = rcl_get_default_allocator();
 
-    rcl_publisher_t publisher;
-    std_msgs__msg__Int32 msg;
-    rclc_support_t support;
-    rcl_allocator_t allocator;
-    rcl_node_t node;
-    rcl_subscription_t subscriber;
-    geometry_msgs__msg__Twist msg_sub;
-    rclc_executor_t executor;
+// Initialize the support structure with default options
+rclc_support_init(&support, 0, NULL, &allocator);
 
-    allocator = rcl_get_default_allocator();
+// Create a micro-ROS node with the name "TPE_Publisher"
+rclc_node_init_default(&node, "TPE_Publisher", "", &support);
 
-    //create init_options
-    rclc_support_init(&support, 0, NULL, &allocator);
+// Initialize the publisher to send messages of type std_msgs/Int32 on the "stm32_publisher" topic
+rclc_publisher_init_default(
+    &publisher,
+    &node,
+    ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32),
+    "stm32_publisher"
+);
 
-    // create node
-    rclc_node_init_default(&node, "TPE_Publisher","", &support);
+// Initialize the subscriber to receive messages of type geometry_msgs/Twist on the "cmd_vel" topic
+rclc_subscription_init_default(
+    &subscriber,
+    &node,
+    ROSIDL_GET_MSG_TYPE_SUPPORT(geometry_msgs, msg, Twist),
+    "cmd_vel"
+);
 
-    // create publisher
+// Initialize the executor to handle callbacks and link it to the context
+rclc_executor_init(&executor, &support.context, 1, &allocator);
 
-     rclc_publisher_init_default(
-      &publisher,
-      &node,
-      ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32),
-      "stm32_publisher");
+// Add the subscriber to the executor, linking it with a callback function
+rclc_executor_add_subscription(&executor, &subscriber, &msg_sub, &subscription_callback, ON_NEW_DATA);
 
-    rclc_subscription_init_default(
-        &subscriber,
-        &node,
-        ROSIDL_GET_MSG_TYPE_SUPPORT(geometry_msgs, msg, Twist),
-        "cmd_vel");
+// Initialize the message data
+msg.data = 0;
 
-    rclc_executor_init(&executor, &support.context, 1, &allocator);
-    rclc_executor_add_subscription(&executor, &subscriber, &msg_sub, &subscription_callback, ON_NEW_DATA);
+// Infinite loop for processing ROS2 communication
+for (;;)
+{
+    // Spin the executor to process incoming subscriptions and callbacks
+    rclc_executor_spin_some(&executor, RCL_MS_TO_NS(100));
 
-    msg.data = 0;
-
-    for(;;)
+    // Publish the message on the "stm32_publisher" topic
+    rcl_ret_t ret = rcl_publish(&publisher, &msg, NULL);
+    if (ret != RCL_RET_OK)
     {
-    	 // osDelay(100);
-     rclc_executor_spin_some(&executor, RCL_MS_TO_NS(100));
- //   /*********
-      rcl_ret_t ret = rcl_publish(&publisher, &msg, NULL);
-      if (ret != RCL_RET_OK)
-      {
+        // Print an error message if publishing fails
         printf("Error publishing (line %d)\n", __LINE__);
-      }
-
-      msg.data++;
-      osDelay(10);
- //     ********/
     }
+
+    // Increment the message data for the next publish cycle
+    msg.data++;
+
+    // Delay for 10 ms
+    osDelay(10);
+}
+
   /* USER CODE END 5 */
 }
 

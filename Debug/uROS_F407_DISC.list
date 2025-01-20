@@ -39,15 +39,15 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, READONLY, DEBUGGING, OCTETS
  17 .debug_macro  0000c106  00000000  00000000  000691e0  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 18 .debug_line   00024e59  00000000  00000000  000752e6  2**0
+ 18 .debug_line   00024e53  00000000  00000000  000752e6  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 19 .debug_str    000e4a4c  00000000  00000000  0009a13f  2**0
+ 19 .debug_str    000e4a4c  00000000  00000000  0009a139  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 20 .comment      00000086  00000000  00000000  0017eb8b  2**0
+ 20 .comment      00000086  00000000  00000000  0017eb85  2**0
                   CONTENTS, READONLY
- 21 .debug_frame  000088b8  00000000  00000000  0017ec14  2**2
+ 21 .debug_frame  000088b8  00000000  00000000  0017ec0c  2**2
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 22 .stabstr      0000004e  00000000  00000000  001874cc  2**0
+ 22 .stabstr      0000004e  00000000  00000000  001874c4  2**0
                   CONTENTS, READONLY, DEBUGGING
 
 Disassembly of section .text:
@@ -1911,8 +1911,8 @@ void subscription_callback(const void *msgin) {
   const geometry_msgs__msg__Twist * msg = (const geometry_msgs__msg__Twist *)msgin;
  8000e40:	687b      	ldr	r3, [r7, #4]
  8000e42:	60fb      	str	r3, [r7, #12]
-  // if velocity in x direction is 0 turn off LED, if 1 turn on LED
 
+  // if velocity in x direction is 0 turn off LED, if 1 turn on LED
   if (msg->linear.x > 0){
  8000e44:	68fb      	ldr	r3, [r7, #12]
  8000e46:	e9d3 0100 	ldrd	r0, r1, [r3]
@@ -2005,10 +2005,10 @@ void subscription_callback(const void *msgin) {
  8000f14:	f44f 5180 	mov.w	r1, #4096	; 0x1000
  8000f18:	4816      	ldr	r0, [pc, #88]	; (8000f74 <subscription_callback+0x13c>)
  8000f1a:	f001 fc97 	bl	800284c <HAL_GPIO_WritePin>
+	  HAL_GPIO_WritePin(LED4_GPIO_Port, LED4_Pin, 1);
 
-//  HAL_GPIO_WritePin(LED6_GPIO_Port, LED6_Pin, (msg->linear.x == 0) ? 0 : 1);
-//  HAL_GPIO_WritePin(LED4_GPIO_Port, LED4_Pin, (msg->linear.y == 0) ? 0 : 1);
-  //HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, (msg->linear.z == 0) ? 0 : 1);
+  }
+
 
 }
  8000f1e:	e024      	b.n	8000f6a <subscription_callback+0x132>
@@ -2112,15 +2112,15 @@ void StartDefaultTask(void *argument)
  8000fd0:	2b00      	cmp	r3, #0
  8000fd2:	d004      	beq.n	8000fde <StartDefaultTask+0x66>
         printf("Error on default allocators (line %d)\n", __LINE__);
- 8000fd4:	f240 1173 	movw	r1, #371	; 0x173
+ 8000fd4:	f44f 71b7 	mov.w	r1, #366	; 0x16e
  8000fd8:	4842      	ldr	r0, [pc, #264]	; (80010e4 <StartDefaultTask+0x16c>)
  8000fda:	f017 fe77 	bl	8018ccc <iprintf>
-    rclc_executor_t executor;
-//    rcl_allocator_t allocator;
-//    rclc_support_t support;
-//    rcl_node_t node;
+rcl_subscription_t subscriber; // Subscriber object
+geometry_msgs__msg__Twist msg_sub; // Message object for receiving velocity commands
+rclc_executor_t executor;  // Executor for managing callbacks
 
-    allocator = rcl_get_default_allocator();
+// Initialize the default allocator
+allocator = rcl_get_default_allocator();
  8000fde:	463b      	mov	r3, r7
  8000fe0:	4618      	mov	r0, r3
  8000fe2:	f00d f9fb 	bl	800e3dc <rcutils_get_default_allocator>
@@ -2132,55 +2132,56 @@ void StartDefaultTask(void *argument)
  8000ff2:	682b      	ldr	r3, [r5, #0]
  8000ff4:	6023      	str	r3, [r4, #0]
 
-    //create init_options
-    rclc_support_init(&support, 0, NULL, &allocator);
+// Initialize the support structure with default options
+rclc_support_init(&support, 0, NULL, &allocator);
  8000ff6:	f107 03e8 	add.w	r3, r7, #232	; 0xe8
  8000ffa:	f107 00fc 	add.w	r0, r7, #252	; 0xfc
  8000ffe:	2200      	movs	r2, #0
  8001000:	2100      	movs	r1, #0
  8001002:	f00d f8c9 	bl	800e198 <rclc_support_init>
 
-    // create node
-    rclc_node_init_default(&node, "TPE_Publisher","", &support);
+// Create a micro-ROS node with the name "TPE_Publisher"
+rclc_node_init_default(&node, "TPE_Publisher", "", &support);
  8001006:	f107 03fc 	add.w	r3, r7, #252	; 0xfc
  800100a:	f107 00e0 	add.w	r0, r7, #224	; 0xe0
  800100e:	4a36      	ldr	r2, [pc, #216]	; (80010e8 <StartDefaultTask+0x170>)
  8001010:	4936      	ldr	r1, [pc, #216]	; (80010ec <StartDefaultTask+0x174>)
  8001012:	f00d f90b 	bl	800e22c <rclc_node_init_default>
 
-    // create publisher
-
-     rclc_publisher_init_default(
+// Initialize the publisher to send messages of type std_msgs/Int32 on the "stm32_publisher" topic
+rclc_publisher_init_default(
  8001016:	f00d ffdd 	bl	800efd4 <rosidl_typesupport_c__get_message_type_support_handle__std_msgs__msg__Int32>
  800101a:	4602      	mov	r2, r0
  800101c:	f107 01e0 	add.w	r1, r7, #224	; 0xe0
  8001020:	f507 709a 	add.w	r0, r7, #308	; 0x134
  8001024:	4b32      	ldr	r3, [pc, #200]	; (80010f0 <StartDefaultTask+0x178>)
  8001026:	f00d f93d 	bl	800e2a4 <rclc_publisher_init_default>
-      &publisher,
-      &node,
-      ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32),
-      "stm32_publisher");
+    ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32),
+    "stm32_publisher"
+);
 
-    rclc_subscription_init_default(
+// Initialize the subscriber to receive messages of type geometry_msgs/Twist on the "cmd_vel" topic
+rclc_subscription_init_default(
  800102a:	f00a fe49 	bl	800bcc0 <rosidl_typesupport_c__get_message_type_support_handle__geometry_msgs__msg__Twist>
  800102e:	4602      	mov	r2, r0
  8001030:	f107 01e0 	add.w	r1, r7, #224	; 0xe0
  8001034:	f107 00dc 	add.w	r0, r7, #220	; 0xdc
  8001038:	4b2e      	ldr	r3, [pc, #184]	; (80010f4 <StartDefaultTask+0x17c>)
  800103a:	f00d f967 	bl	800e30c <rclc_subscription_init_default>
-        &subscriber,
-        &node,
-        ROSIDL_GET_MSG_TYPE_SUPPORT(geometry_msgs, msg, Twist),
-        "cmd_vel");
+    ROSIDL_GET_MSG_TYPE_SUPPORT(geometry_msgs, msg, Twist),
+    "cmd_vel"
+);
 
-    rclc_executor_init(&executor, &support.context, 1, &allocator);
+// Initialize the executor to handle callbacks and link it to the context
+rclc_executor_init(&executor, &support.context, 1, &allocator);
  800103e:	f107 03e8 	add.w	r3, r7, #232	; 0xe8
  8001042:	f107 01fc 	add.w	r1, r7, #252	; 0xfc
  8001046:	f107 0020 	add.w	r0, r7, #32
  800104a:	2201      	movs	r2, #1
  800104c:	f00c fddc 	bl	800dc08 <rclc_executor_init>
-    rclc_executor_add_subscription(&executor, &subscriber, &msg_sub, &subscription_callback, ON_NEW_DATA);
+
+// Add the subscriber to the executor, linking it with a callback function
+rclc_executor_add_subscription(&executor, &subscriber, &msg_sub, &subscription_callback, ON_NEW_DATA);
  8001050:	f107 02a8 	add.w	r2, r7, #168	; 0xa8
  8001054:	f107 01dc 	add.w	r1, r7, #220	; 0xdc
  8001058:	f107 0020 	add.w	r0, r7, #32
@@ -2189,46 +2190,53 @@ void StartDefaultTask(void *argument)
  8001060:	4b25      	ldr	r3, [pc, #148]	; (80010f8 <StartDefaultTask+0x180>)
  8001062:	f00c fe41 	bl	800dce8 <rclc_executor_add_subscription>
 
-    msg.data = 0;
+// Initialize the message data
+msg.data = 0;
  8001066:	2300      	movs	r3, #0
  8001068:	f8c7 3130 	str.w	r3, [r7, #304]	; 0x130
 
-    for(;;)
-    {
-    	 // osDelay(100);
-     rclc_executor_spin_some(&executor, RCL_MS_TO_NS(100));
+// Infinite loop for processing ROS2 communication
+for (;;)
+{
+    // Spin the executor to process incoming subscriptions and callbacks
+    rclc_executor_spin_some(&executor, RCL_MS_TO_NS(100));
  800106c:	f107 0120 	add.w	r1, r7, #32
  8001070:	a311      	add	r3, pc, #68	; (adr r3, 80010b8 <StartDefaultTask+0x140>)
  8001072:	e9d3 2300 	ldrd	r2, r3, [r3]
  8001076:	4608      	mov	r0, r1
  8001078:	f00d f856 	bl	800e128 <rclc_executor_spin_some>
- //   /*********
-      rcl_ret_t ret = rcl_publish(&publisher, &msg, NULL);
+
+    // Publish the message on the "stm32_publisher" topic
+    rcl_ret_t ret = rcl_publish(&publisher, &msg, NULL);
  800107c:	f507 7198 	add.w	r1, r7, #304	; 0x130
  8001080:	f507 739a 	add.w	r3, r7, #308	; 0x134
  8001084:	2200      	movs	r2, #0
  8001086:	4618      	mov	r0, r3
  8001088:	f00c fa30 	bl	800d4ec <rcl_publish>
  800108c:	f8c7 014c 	str.w	r0, [r7, #332]	; 0x14c
-      if (ret != RCL_RET_OK)
+    if (ret != RCL_RET_OK)
  8001090:	f8d7 314c 	ldr.w	r3, [r7, #332]	; 0x14c
  8001094:	2b00      	cmp	r3, #0
  8001096:	d004      	beq.n	80010a2 <StartDefaultTask+0x12a>
-      {
+    {
+        // Print an error message if publishing fails
         printf("Error publishing (line %d)\n", __LINE__);
- 8001098:	f240 11ab 	movw	r1, #427	; 0x1ab
+ 8001098:	f240 11a7 	movw	r1, #423	; 0x1a7
  800109c:	4817      	ldr	r0, [pc, #92]	; (80010fc <StartDefaultTask+0x184>)
  800109e:	f017 fe15 	bl	8018ccc <iprintf>
-      }
+    }
 
-      msg.data++;
+    // Increment the message data for the next publish cycle
+    msg.data++;
  80010a2:	f8d7 3130 	ldr.w	r3, [r7, #304]	; 0x130
  80010a6:	3301      	adds	r3, #1
  80010a8:	f8c7 3130 	str.w	r3, [r7, #304]	; 0x130
-      osDelay(10);
+
+    // Delay for 10 ms
+    osDelay(10);
  80010ac:	200a      	movs	r0, #10
  80010ae:	f007 fc4f 	bl	8008950 <osDelay>
-    {
+{
  80010b2:	e7db      	b.n	800106c <StartDefaultTask+0xf4>
  80010b4:	f3af 8000 	nop.w
  80010b8:	05f5e100 	.word	0x05f5e100
