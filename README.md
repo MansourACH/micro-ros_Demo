@@ -108,7 +108,7 @@ for (;;)
     // Delay for 10 ms
     osDelay(10);
 }
-
+```
 ## Useful Resources
 
 If you're working on configuring micro-ROS for STM32 using STM32CubeMX, the following repository provides valuable utilities and setup instructions:
