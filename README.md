@@ -109,3 +109,14 @@ for (;;)
     osDelay(10);
 }
 
+## Useful Resources
+
+If you're working on configuring micro-ROS for STM32 using STM32CubeMX, the following repository provides valuable utilities and setup instructions:
+
+- **micro-ROS STM32CubeMX Utilities**: [micro_ros_stm32cubemx_utils](https://github.com/micro-ROS/micro_ros_stm32cubemx_utils.git)
+
+This repository includes tools and guidelines for integrating micro-ROS into STM32 projects using STM32CubeMX. It covers:
+- Setting up micro-ROS transport layers
+- Generating necessary middleware
+- Building the firmware with STM32 HAL and LL drivers
+
