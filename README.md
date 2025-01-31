@@ -133,7 +133,6 @@ While the micro-ROS documentation covers standard use cases, custom node develop
 ### 4. Resource Constraints on STM32  
 When running micro-ROS on STM32 devices, ensure sufficient memory and processing power to avoid runtime issues. Profiling your application can help identify resource bottlenecks.  
 
-If you encounter additional issues, feel free to open a ticket in the [Issues Section](link-to-issues). We value your feedback and strive to improve the micro-ROS ecosystem!  
 
   
 
