@@ -119,4 +119,21 @@ This repository includes tools and guidelines for integrating micro-ROS into STM
 - Setting up micro-ROS transport layers
 - Generating necessary middleware
 - Building the firmware with STM32 HAL and LL drivers
+## Issues
+
+### 1. Topic Name Sensitivity  
+micro-ROS is case-sensitive with respect to topic names. Ensure that the topic names used in your micro-ROS application match exactly (including case) with the ones expected by the micro-ROS Agent or other nodes in the system.  
+
+### 2. Transport Configuration Challenges  
+Configuring the transport layer (e.g., UART, Ethernet) can be complex and may require careful attention to hardware-specific parameters. Refer to the [Transport Configuration Guide](https://github.com/micro-ROS/micro_ros_stm32cubemx_utils.git) for detailed instructions.  
+
+### 3. Limited Documentation on Custom Nodes  
+While the micro-ROS documentation covers standard use cases, custom node development might require additional exploration of the API. Check the examples folder or community forums for more insights.  
+
+### 4. Resource Constraints on STM32  
+When running micro-ROS on STM32 devices, ensure sufficient memory and processing power to avoid runtime issues. Profiling your application can help identify resource bottlenecks.  
+
+If you encounter additional issues, feel free to open a ticket in the [Issues Section](link-to-issues). We value your feedback and strive to improve the micro-ROS ecosystem!  
+
+  
 
